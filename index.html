@@ -144,7 +144,7 @@ const cards=[...document.querySelectorAll('.game')];const names=['秒数チャ�
   window.addEventListener('message',onSaveMessage);
   function verify(){
    if(finished)return;
-   if(attempt++>=12){fail('保存状態を確認できませんでした。通信を確認して再送信してください');return;}
+   if(attempt++>=12){fail('保存結果を確認できませんでした。Apps Scriptの新バージョンが公開されているか確認してください。');return;}
    const cb='geSurveyCheck_'+Date.now()+'_'+attempt;
    const script=document.createElement('script');
    let settled=false;
