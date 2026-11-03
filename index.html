@@ -114,18 +114,48 @@ const cards=[...document.querySelectorAll('.game')];const names=['秒数チャ�
   }
   const status=document.getElementById('survey-status');
   if(!answers.carrier||!answers.period||!answers.internet||!answers.device){status.textContent='4問すべて回答してください';return false;}
-  if(!(window.google&&google.script&&google.script.run)){status.textContent='保存接続エラー：Apps Scriptの公開URLから開いてください';return false;}
   surveyBusy=true;status.textContent='アンケート保存中…';
   const makeId=(prefix)=>prefix+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,14);
   let participantId;
   try{participantId=sessionStorage.getItem('gameEventParticipantId');if(!participantId){participantId=makeId('participant');sessionStorage.setItem('gameEventParticipantId',participantId);}}catch(e){participantId=makeId('participant');}
   const payload={type:'survey',eventId:makeId('survey'),participantId,answers};
-  google.script.run.withSuccessHandler(result=>{
-   if(!(result&&result.ok&&result.saved)){surveyBusy=false;status.textContent='保存失敗：'+(result&&result.error||'再試行してください');return;}
-   window.gameEventSurveyAnswers=answers;
-   survey.classList.remove('active');survey.style.display='none';
-   select.classList.add('active');select.style.display='block';select.style.visibility='visible';
-  }).withFailureHandler(err=>{surveyBusy=false;status.textContent='保存失敗：'+(err&&err.message||err);}).geSaveFromPage(payload);
+  const endpoint='https://script.google.com/macros/s/AKfycbxtYO76fNHPFdukNIJdIbeesLd-QBY6aexnBvFYQ3TdtHt1AIlvgUGsfmpzJWQSn_Lj/exec';
+  let finished=false,attempt=0;
+  const frame=document.createElement('iframe');
+  frame.name='ge_save_'+payload.eventId;
+  frame.style.display='none';
+  document.body.appendChild(frame);
+  const postForm=document.createElement('form');
+  postForm.method='POST';postForm.action=endpoint;postForm.target=frame.name;
+  postForm.style.display='none';
+  const input=document.createElement('input');
+  input.type='hidden';input.name='payload';input.value=JSON.stringify(payload);
+  postForm.appendChild(input);document.body.appendChild(postForm);
+  let pollTimer=null;
+  function cleanup(){window.removeEventListener('message',onSaveMessage);postForm.remove();setTimeout(()=>frame.remove(),1000);}
+  function complete(){if(finished)return;finished=true;clearTimeout(pollTimer);cleanup();window.gameEventSurveyAnswers=answers;survey.classList.remove('active');survey.style.display='none';select.classList.add('active');select.style.display='block';select.style.visibility='visible';}
+  function fail(message){if(finished)return;finished=true;clearTimeout(pollTimer);cleanup();surveyBusy=false;status.textContent=message||'保存確認に失敗しました。再度送信してください';}
+  function onSaveMessage(ev){
+   if(!ev.origin.endsWith('.google.com')&&!ev.origin.endsWith('.googleusercontent.com'))return;
+   const data=ev.data;
+   if(!data||data.kind!=='ge-save-result'||data.eventId!==payload.eventId)return;
+   if(data.ok&&data.saved)complete();else fail('保存失敗：'+(data.error||'再度送信してください'));
+  }
+  window.addEventListener('message',onSaveMessage);
+  function verify(){
+   if(finished)return;
+   if(attempt++>=12){fail('保存状態を確認できませんでした。通信を確認して再送信してください');return;}
+   const cb='geSurveyCheck_'+Date.now()+'_'+attempt;
+   const script=document.createElement('script');
+   let settled=false;
+   const next=()=>{if(settled)return;settled=true;delete window[cb];script.remove();if(!finished)pollTimer=setTimeout(verify,1500);};
+   window[cb]=function(data){if(data&&data.saved){settled=true;delete window[cb];script.remove();complete();}else next();};
+   script.onerror=next;
+   script.src=endpoint+'?callback='+encodeURIComponent(cb)+'&eventId='+encodeURIComponent(payload.eventId)+'&type=survey';
+   document.head.appendChild(script);
+   setTimeout(next,3500);
+  }
+  try{postForm.submit();pollTimer=setTimeout(verify,1800);}catch(error){fail('保存通信エラー：'+error.message);}
   return false;
  }
  form.addEventListener('submit',advanceFromSurvey);
@@ -144,16 +174,16 @@ const cards=[...document.querySelectorAll('.game')];const names=['秒数チャ�
   const select=document.querySelector('#game-select-screen iframe');
   if(!select||e.source!==select.contentWindow||!e.data||e.data.kind!=='game-event-launch')return;
   const game=Number(e.data.game);if(!names[game]||opening)return;
-  if(!(window.google&&google.script&&google.script.run)){alert('Apps Scriptの公開URLから開いてください');return;}
   opening=true;
-  document.getElementById('integrated-game-name').textContent=names[game]+' 読み込み中…';
+  document.getElementById('integrated-game-name').textContent=names[game];
   layer.style.display='flex';
-  google.script.run.withSuccessHandler(result=>{
-   opening=false;
-   if(!result||!result.ok){document.getElementById('integrated-game-name').textContent='読み込み失敗';frame.srcdoc='<body style="background:#111;color:white;font:18px sans-serif;padding:25px">'+(result&&result.error||'ゲーム本体が未登録です')+'</body>';return;}
-   document.getElementById('integrated-game-name').textContent=names[game];
-   frame.removeAttribute('src');frame.srcdoc=result.html;
-  }).withFailureHandler(err=>{opening=false;document.getElementById('integrated-game-name').textContent='読み込み失敗';frame.srcdoc='<body style="background:#111;color:white;padding:25px">ゲーム読み込みエラー</body>';}).geLoadGame(game);
+  frame.removeAttribute('srcdoc');
+  // GitHub Pagesで公開したGAME*.htmlを直接読み込む。Apps ScriptのgeLoadGameは呼ばない。
+  const githubBase='https://vvama-cu.github.io/game-event/';
+  const files={1:'GAME1.html',3:'GAME3.html',4:'GAME4.html'};
+  frame.onload=()=>{opening=false;};
+  frame.onerror=()=>{opening=false;document.getElementById('integrated-game-name').textContent='ゲームを読み込めませんでした';};
+  frame.src=githubBase+files[game];
  });
  document.getElementById('integrated-game-back').addEventListener('click',()=>{frame.removeAttribute('srcdoc');frame.src='about:blank';layer.style.display='none';opening=false;});
 })();</script></body></html>
