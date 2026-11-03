@@ -150,10 +150,23 @@ const cards=[...document.querySelectorAll('.game')];const names=['秒数チャ�
   return false;
  }
  form.addEventListener('submit',advanceFromSurvey);
- document.getElementById('survey-submit').addEventListener('click',advanceFromSurvey);
+
  let started=false;
  start.addEventListener('click',()=>{
   if(started)return;started=true;start.classList.add('pressed');
   survey.classList.add('active');document.querySelector('.scene').style.visibility='hidden';
  });
-})();</script><div id="integrated-game-layer" style="display:none;position:fixed;inset:0;z-index:500;background:#080b17;flex-direction:column"><div style="height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:linear-gradient(90deg,#161126,#352343);color:#f6d98d;font:bold 15px sans-serif"><span id="integrated-game-name"></span><button id="integrated-game-back" style="background:#f5d890;border:1px solid #fff3c6;border-radius:8px;color:#281b1b;padding:8px 15px;font-weight:bold;cursor:pointer" type="button">ゲーム選択に戻る</button></div><iframe allow="autoplay;fullscreen" id="integrated-game-frame" style="border:0;width:100%;height:calc(100% - 48px);flex:1;background:#000" title="選択したゲーム"></iframe></div><script>(()=>{const layer=document.getElementById('integrated-game-layer');const frame=document.getElementById('integrated-game-frame');const names={1:'秒数チャレンジ',3:'ギリギリコインチャレンジ',4:'カードバトルチャレンジ'};const files={1:'GAME1.html',3:'GAME3.html',4:'GAME4.html'};window.addEventListener('message',e=>{const select=document.querySelector('#game-select-screen iframe');if(e.source!==select.contentWindow||!e.data||e.data.kind!=='game-event-launch')return;const game=Number(e.data.game);if(!files[game])return;document.getElementById('integrated-game-name').textContent=names[game];frame.src=files[game];layer.style.display='flex';});document.getElementById('integrated-game-back').addEventListener('click',()=>{frame.src='about:blank';layer.style.display='none';});})();</script></body></html>
+})();</script><script>
+// Open games in the top-level browsing context instead of an iframe.
+// Browser Back returns to the selection screen.
+(()=>{
+  const gameFiles={1:'GAME1.html',3:'GAME3.html',4:'GAME4.html'};
+  window.addEventListener('message',event=>{
+    const select=document.querySelector('#game-select-screen iframe');
+    if(!select || event.source!==select.contentWindow || !event.data || event.data.kind!=='game-event-launch')return;
+    const file=gameFiles[Number(event.data.game)];
+    if(!file)return;
+    window.location.assign(new URL(file,window.location.href).href);
+  });
+})();
+</script></body></html>
