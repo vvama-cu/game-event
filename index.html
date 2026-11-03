@@ -103,6 +103,32 @@ const cards=[...document.querySelectorAll('.game')];const names=['秒数チャ�
  const survey=document.getElementById('survey-screen');
  const select=document.getElementById('game-select-screen');
  const form=document.getElementById('survey-form');
+ const GAS_SAVE_URL='https://script.google.com/macros/s/AKfycbxtYO76fNHPFdukNIJdIbeesLd-QBY6aexnBvFYQ3TdtHt1AIlvgUGsfmpzJWQSn_Lj/exec';
+ function saveSurveyToSheets(answers){
+  const status=document.getElementById('survey-status');
+  const participantId=sessionStorage.getItem('ge_participant_id')||('participant_'+crypto.randomUUID().replace(/-/g,''));
+  sessionStorage.setItem('ge_participant_id',participantId);
+  const eventId='survey_'+crypto.randomUUID().replace(/-/g,'');
+  const payload={type:'survey',eventId,participantId,answers};
+  const target='ge_save_'+Date.now();
+  const iframe=document.createElement('iframe');
+  iframe.name=target;iframe.style.display='none';
+  const f=document.createElement('form');
+  f.method='POST';f.action=GAS_SAVE_URL;f.target=target;f.style.display='none';
+  const input=document.createElement('input');input.name='payload';input.value=JSON.stringify(payload);f.appendChild(input);
+  document.body.append(iframe,f);
+  let settled=false;
+  const timer=setTimeout(()=>finish(false,'保存確認ができませんでした。通信環境を確認してください。'),20000);
+  function finish(ok,msg){if(settled)return;settled=true;clearTimeout(timer);window.removeEventListener('message',receive);f.remove();setTimeout(()=>iframe.remove(),500);status.textContent=msg;console[ok?'log':'error']('GAME EVENT survey:',msg);}
+  function receive(ev){
+   if(ev.source!==iframe.contentWindow||!ev.data||ev.data.kind!=='ge-save-result'||ev.data.eventId!==eventId)return;
+   if(ev.data.ok&&ev.data.saved)finish(true,'アンケートを保存しました');
+   else finish(false,'アンケート保存失敗: '+(ev.data.error||'不明なエラー'));
+  }
+  window.addEventListener('message',receive);
+  status.textContent='アンケート保存中…';
+  f.submit();
+ }
  function advanceFromSurvey(e){
   if(e)e.preventDefault();
   const answers={};
@@ -115,6 +141,7 @@ const cards=[...document.querySelectorAll('.game')];const names=['秒数チャ�
    return false;
   }
   window.gameEventSurveyAnswers=answers;
+  saveSurveyToSheets(answers);
   survey.classList.remove('active');
   survey.style.display='none';
   select.classList.add('active');
