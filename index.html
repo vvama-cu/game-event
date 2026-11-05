@@ -144,18 +144,18 @@ const cards=[...document.querySelectorAll('.game')];const names=['秒数チャ�
   window.addEventListener('message',onSaveMessage);
   function verify(){
    if(finished)return;
-   if(attempt++>=12){fail('保存結果を確認できませんでした。Apps Scriptの新バージョンが公開されているか確認してください。');return;}
+   if(attempt++>=12){fail('保存の確認ができませんでした。二重送信せず、スプレッドシートのアンケート欄を確認してください。未保存ならApps Scriptの公開バージョンとアクセス権を確認してください。');return;}
    const cb='geSurveyCheck_'+Date.now()+'_'+attempt;
    const script=document.createElement('script');
    let settled=false;
-   const next=()=>{if(settled)return;settled=true;delete window[cb];script.remove();if(!finished)pollTimer=setTimeout(verify,1500);};
+   const next=()=>{if(settled)return;settled=true;delete window[cb];script.remove();if(!finished)pollTimer=setTimeout(verify,900);};
    window[cb]=function(data){if(data&&data.saved){settled=true;delete window[cb];script.remove();complete();}else next();};
    script.onerror=next;
    script.src=endpoint+'?callback='+encodeURIComponent(cb)+'&eventId='+encodeURIComponent(payload.eventId)+'&type=survey';
    document.head.appendChild(script);
-   setTimeout(next,3500);
+   setTimeout(next,2200);
   }
-  try{postForm.submit();pollTimer=setTimeout(verify,1800);}catch(error){fail('保存通信エラー：'+error.message);}
+  try{postForm.submit();pollTimer=setTimeout(verify,650);}catch(error){fail('保存通信エラー：'+error.message);}
   return false;
  }
  form.addEventListener('submit',advanceFromSurvey);
