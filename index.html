@@ -99,32 +99,39 @@ let selected=0;
 const dots=document.getElementById(&#x27;dots&#x27;);
 function render(){
  const count=cards.length;
+ // Every game has its own unobstructed slot. No back-of-carousel overlap.
+ const stage=document.getElementById(&#x27;stage&#x27;);
+ const w=stage.clientWidth;
+ const h=stage.clientHeight;
+ const cols=w&lt;620?2:(count&lt;=4?4:Math.min(5,Math.ceil(Math.sqrt(count*1.7))));
+ const rows=Math.ceil(count/cols);
+ const cellW=w/cols, cellH=h/rows;
+ const cardW=cards[0]?.offsetWidth||300;
+ const cardH=cards[0]?.offsetHeight||420;
+ const scale=Math.min(.94,cellW/cardW*.88,cellH/cardH*.88);
  cards.forEach((card,i)=&gt;{
-  const step=(i-selected+count)%count;
-  const angle=2*Math.PI*step/count;
-  const front=Math.cos(angle);
-  const x=Math.sin(angle);
-  const center=step===0;
-  // 前面、左右、背面のすべてを可視にする。背面は少し上へ配置する。
-  const translateX=x*38;
-  const translateY=(1-front)*-12;
-  const scale=center?1:(0.56+0.22*(front+1)/2);
-  const rotateY=-x*32;
-  card.style.setProperty(&#x27;transform&#x27;,`translateX(${translateX}vw) translateY(${translateY}%) translateZ(${center?145:-120}px) rotateY(${rotateY}deg) scale(${scale})`,&#x27;important&#x27;);
-  card.style.setProperty(&#x27;opacity&#x27;,center?&#x27;1&#x27;:String(0.68+0.16*(front+1)/2),&#x27;important&#x27;);
-  card.style.setProperty(&#x27;filter&#x27;,center?&#x27;brightness(1)&#x27;:&#x27;brightness(.75)&#x27;,&#x27;important&#x27;);
+  const slot=(i-selected+count)%count;
+  const col=slot%cols, row=Math.floor(slot/cols);
+  const x=(col-(cols-1)/2)*cellW;
+  const y=(row-(rows-1)/2)*cellH;
+  const active=slot===0;
+  card.style.setProperty(&#x27;transform&#x27;,`translate3d(${x}px,${y}px,0) scale(${scale*(active?1:.96)})`,&#x27;important&#x27;);
+  card.style.setProperty(&#x27;opacity&#x27;,&#x27;1&#x27;,&#x27;important&#x27;);
+  card.style.setProperty(&#x27;filter&#x27;,active?&#x27;brightness(1.12)&#x27;:&#x27;brightness(.9)&#x27;,&#x27;important&#x27;);
   card.style.setProperty(&#x27;visibility&#x27;,&#x27;visible&#x27;,&#x27;important&#x27;);
   card.style.pointerEvents=&#x27;auto&#x27;;
-  card.style.zIndex=String(Math.round(100+front*50));
-  card.dataset.offset=String(step);
+  card.style.zIndex=String(active?20:10);
+  card.dataset.offset=String(slot);
   card.setAttribute(&#x27;aria-hidden&#x27;,&#x27;false&#x27;);
   card.setAttribute(&#x27;aria-label&#x27;,names[i]);
-  card.setAttribute(&#x27;aria-current&#x27;,center?&#x27;true&#x27;:&#x27;false&#x27;);
+  card.setAttribute(&#x27;aria-current&#x27;,active?&#x27;true&#x27;:&#x27;false&#x27;);
  });
  dots.innerHTML=cards.map((_,i)=&gt;`&lt;span class=&quot;dot ${i===selected?&#x27;active&#x27;:&#x27;&#x27;}&quot; title=&quot;${names[i]}&quot;&gt;&lt;/span&gt;`).join(&#x27;&#x27;);
- document.querySelector(&#x27;.hint&#x27;).textContent=`全${count}ゲームを表示中 ・ 左右でターンテーブルを回転`;
+ document.querySelector(&#x27;.hint&#x27;).textContent=`全${count}ゲーム表示 ・ 左右で選択を切り替え`;
  document.getElementById(&#x27;selectedTitle&#x27;).textContent=names[selected]||&#x27;&#x27;;
 }
+window.addEventListener(&#x27;resize&#x27;,render);
+
 function move(delta){if(!cards.length)return;selected=(selected+delta+cards.length)%cards.length;render();}
 document.getElementById(&#x27;prev&#x27;).onclick=()=&gt;move(-1);
 document.getElementById(&#x27;next&#x27;).onclick=()=&gt;move(1);
