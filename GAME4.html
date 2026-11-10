@@ -750,24 +750,8 @@ function makeHand(){
  for(let i=arr.length-1;i>0;i--){const j=rand(i+1);[arr[i],arr[j]]=[arr[j],arr[i]]}
  return arr;
 }
-/* GAME4 voice: uses the device's Japanese speech engine. */
-function game4SpeakDealer(){
- if(!('speechSynthesis' in window))return;
- const rank=rankName(g.rank);
- const suit={S:'スペード',H:'ハート',D:'ダイヤ',C:'クラブ'}[g.base.split('_')[0]]||'';
- const text='5枚の中から1枚選んでね！ '+suit+rank+'より'+(g.high==='HIGH'?'強い':'弱い')+'カードならウィン！';
- try{
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='ja-JP';u.rate=.86;u.pitch=.94;u.volume=1;
-  const voices=speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith('ja'));
-  const preferred=voices.find(v=>/Nanami|七海|Haruka|Ayumi|Kyoko|Sayaka|Mizuki/i.test(v.name));
-  if(preferred)u.voice=preferred;else if(voices.length)u.voice=voices[0];
-  speechSynthesis.speak(u);
- }catch(e){console.warn('GAME4音声再生に失敗',e)}
-}
 function dealer(){const rank=rankName(g.rank);const suit={S:'♠',H:'♥',D:'♦',C:'♣'}[g.base.split('_')[0]]||'';const line=`<span class="speech-line">5枚の中から1枚</span><span class="speech-line">選んでね！</span><span class="speech-line">${suit}${rank}より${g.high==='HIGH'?'強い':'弱い'}ならWIN！</span>`;return `<img class="dealer" src="${A('dealer')}" alt="ディーラー"><div class="speech">${line}</div>`}
-function deal(){stage.classList.remove('revival');locked=false;try{g.hand=makeHand()}catch(e){document.getElementById('err').textContent='配札エラー: '+e.message;return;}view(`${dealer()}<div class="playarea"><div class="basebox"><div class="center"><div class="tag">現在のカード</div><div>${ci(g.base,'card small')}</div></div><div class="center"><div class="tag">次のカードは？</div><img class="hl-selected" src="${A(g.high.toLowerCase())}" alt="${g.high}"><div class="status">${g.high}</div></div></div><div class="five">${g.hand.map((x,i)=>`<button id="p${i}" onclick="pick(${i})">${ci('BACK')}<div class="count">${i+1}</div></button>`).join('')}</div><div class="status" id="msg">${g.mode?'テストモード：どのカードを選んでも指定演出へ進みます':'好きなカードをタップ！'}</div></div>`);game4SpeakDealer()}
+function deal(){stage.classList.remove('revival');locked=false;try{g.hand=makeHand()}catch(e){document.getElementById('err').textContent='配札エラー: '+e.message;return;}view(`${dealer()}<div class="playarea"><div class="basebox"><div class="center"><div class="tag">現在のカード</div><div>${ci(g.base,'card small')}</div></div><div class="center"><div class="tag">次のカードは？</div><img class="hl-selected" src="${A(g.high.toLowerCase())}" alt="${g.high}"><div class="status">${g.high}</div></div></div><div class="five">${g.hand.map((x,i)=>`<button id="p${i}" onclick="pick(${i})">${ci('BACK')}<div class="count">${i+1}</div></button>`).join('')}</div><div class="status" id="msg">${g.mode?'テストモード：どのカードを選んでも指定演出へ進みます':'好きなカードをタップ！'}</div></div>`)}
 function actualKind(x){
  if(x.kind==='joker'||x.name==='JOKER'||x.name==='JOKER2')return 'joker';
  const raw=x.name.split('_').pop();
@@ -776,7 +760,7 @@ function actualKind(x){
  if(r===g.rank)return 'draw';
  return g.high==='HIGH'?(r>g.rank?'win':'lose'):(r<g.rank?'win':'lose');
 }
-async function pick(i){if(locked)return;try{speechSynthesis.cancel()}catch(e){}locked=true;document.querySelectorAll('.five button').forEach(b=>b.disabled=true);let x=g.hand[i];
+async function pick(i){if(locked)return;locked=true;document.querySelectorAll('.five button').forEach(b=>b.disabled=true);let x=g.hand[i];
  // Test modes guarantee the selected card demonstrates the requested effect.
  // The normal unforced game still uses its original shuffled hand.
  const targetKind=({normal:'win',joker:'joker',draw:'draw',special:'joker'})[g.mode];

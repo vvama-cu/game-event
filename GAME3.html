@@ -701,24 +701,9 @@ document.getElementById('closeResult').addEventListener('click',close);
  }
  function begin(){
   if(started)return;started=true;
-  // The speech request is made synchronously inside the user's start-button gesture.
   beginAt=performance.now();
-  let utterance=null;
-  if('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window){
-   try{
-    utterance=new SpeechSynthesisUtterance('コインを入れて水位を上げよう！ ギリギリだと思ったらストップ！ 水があふれたら負け！');
-    utterance.lang='ja-JP';utterance.rate=.85;utterance.pitch=1.15;utterance.volume=1;
-    const voices=speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith('ja'));
-    utterance.voice=voices.find(v=>/Nanami|七海/i.test(v.name))||voices[0]||null;
-    utterance.onend=()=>{timeout=setTimeout(finish,1400)};
-    utterance.onerror=()=>{timeout=setTimeout(finish,6500)};
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
-    try{speechSynthesis.resume()}catch(e){}
-   }catch(e){utterance=null}
-  }
   gate.remove();panel.classList.add('g3-active');
-  if(!utterance)timeout=setTimeout(finish,10000);
+  timeout=setTimeout(finish,10000);
   hardTimer=setTimeout(finish,MAX_DURATION);
  }
  gate.addEventListener('pointerdown',begin,{once:true});
