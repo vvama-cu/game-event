@@ -185,13 +185,6 @@ const cards=[...document.querySelectorAll(&#x27;.game&#x27;)];const names=[&#x27
   const files={1:'GAME1.html',3:'GAME3.html',4:'GAME4.html',5:'GAME5.html'};
   frame.onload=()=>{opening=false;};
   frame.onerror=()=>{opening=false;document.getElementById('integrated-game-name').textContent='ゲームを読み込めませんでした';};
-  if(game===5){
-    // 404をゲーム画面として表示しない。正式版が公開されるまで案内を表示。
-    frame.src='about:blank';
-    frame.srcdoc='<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#071b3c;color:#ffe2a0;font:700 20px sans-serif;text-align:center;padding:24px"><div>釣りチャレンジを読み込めません。<p style="font-size:15px;color:white;font-weight:400">GitHub Pagesの公開先に正式FIX版のGAME5.htmlを配置してください。</p></div></body></html>';
-    opening=false;
-    return;
-  }
   frame.src=githubBase+files[game];
  });
  document.getElementById('integrated-game-back').addEventListener('click',()=>{frame.removeAttribute('srcdoc');frame.src='about:blank';layer.style.display='none';opening=false;});
